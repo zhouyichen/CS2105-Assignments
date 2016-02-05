@@ -1,5 +1,5 @@
-// <Fill in your name> 
-
+// <Zhou Yichen> 
+import java.io.*;
 import java.net.*;
 
 class FileSender {
@@ -20,14 +20,47 @@ class FileSender {
     }
     
     public FileSender(String fileToOpen, String host, String port, String rcvFileName) {
-        
-        // Refer to Assignment 0 Ex #4 on how to open a file with BufferedInputStream
-        
-        // UDP transmission is unreliable. Sender may overrun
-        // receiver if sending too fast, giving packet lost as a result.
-        // It is suggested that sender pause for a while after sending every packet:
-        // E.g., Thread.sleep(1); // pause for 1 millisecond
-        // On the other hand, don't pause more than 10ms after sending
-        // a packet, or your program will take a long time to send a small file.
+        try {
+            // get receiver address
+            InetAddress receiverAddress = InetAddress.getByName(host);
+            // get port number
+            int portNumber = Integer.parseInt(port);
+
+            // create sender socket
+            DatagramSocket senderSocket = new DatagramSocket();
+
+            // send file name packet
+            byte[] fileName = rcvFileName.getBytes();
+            DatagramPacket fileNamePacket = new DatagramPacket(fileName, fileName.length, receiverAddress, portNumber);
+            senderSocket.send(fileNamePacket);
+            Thread.sleep(1);
+
+            // prepare the buffer
+            byte[] buffer = new byte[1000];
+            FileInputStream fis = new FileInputStream(fileToOpen);
+            BufferedInputStream bis = new BufferedInputStream(fis);
+
+            int numBytes = bis.read(buffer);
+
+            // send packets for file content
+            while (numBytes > 0) {
+                DatagramPacket packet = new DatagramPacket(buffer, numBytes, receiverAddress, portNumber);
+                senderSocket.send(packet);
+                numBytes = bis.read(buffer);
+                Thread.sleep(1);
+            }
+
+            // send an empty buffer to signal the end of file
+            byte[] emptyBuffer = new byte[1];
+            DatagramPacket endPacket = new DatagramPacket(emptyBuffer, 0, receiverAddress, portNumber);
+            senderSocket.send(endPacket);
+
+            bis.close();
+            senderSocket.close();
+
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }
