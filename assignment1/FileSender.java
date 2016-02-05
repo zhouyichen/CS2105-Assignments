@@ -27,12 +27,12 @@ class FileSender {
             int portNumber = Integer.parseInt(port);
 
             // create sender socket
-            DatagramSocket senderSocket = new DatagramSocket();
+            this.socket = new DatagramSocket();
 
             // send file name packet
             byte[] fileName = rcvFileName.getBytes();
-            DatagramPacket fileNamePacket = new DatagramPacket(fileName, fileName.length, receiverAddress, portNumber);
-            senderSocket.send(fileNamePacket);
+            this.pkt = new DatagramPacket(fileName, fileName.length, receiverAddress, portNumber);
+            this.socket.send(this.pkt);
             Thread.sleep(1);
 
             // prepare the buffer
@@ -44,19 +44,19 @@ class FileSender {
 
             // send packets for file content
             while (numBytes > 0) {
-                DatagramPacket packet = new DatagramPacket(buffer, numBytes, receiverAddress, portNumber);
-                senderSocket.send(packet);
+                this.pkt = new DatagramPacket(buffer, numBytes, receiverAddress, portNumber);
+                this.socket.send(this.pkt);
                 numBytes = bis.read(buffer);
                 Thread.sleep(1);
             }
 
             // send an empty buffer to signal the end of file
             byte[] emptyBuffer = new byte[1];
-            DatagramPacket endPacket = new DatagramPacket(emptyBuffer, 0, receiverAddress, portNumber);
-            senderSocket.send(endPacket);
+            this.pkt = new DatagramPacket(emptyBuffer, 0, receiverAddress, portNumber);
+            this.socket.send(this.pkt);
 
             bis.close();
-            senderSocket.close();
+            this.socket.close();
 
         } catch(Exception e) {
             e.printStackTrace();
