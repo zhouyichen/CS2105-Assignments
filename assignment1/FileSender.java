@@ -51,7 +51,7 @@ class FileSender {
             }
 
             // send an empty buffer to signal the end of file
-            byte[] emptyBuffer = new byte[1];
+            byte[] emptyBuffer = new byte[0];
             this.pkt = new DatagramPacket(emptyBuffer, 0, receiverAddress, portNumber);
             this.socket.send(this.pkt);
 
