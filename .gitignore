@@ -1,2 +1,5 @@
 *.class
 *.mp3
+*.classpath
+*.project
+input
