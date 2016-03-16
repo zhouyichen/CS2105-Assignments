@@ -18,8 +18,19 @@ import java.util.zip.CRC32;
 class FileSender {
     
     private DatagramSocket socket; 
-    private DatagramPacket pkt;
-    private int numBytes;
+    private DatagramPacket packet;
+    private byte[] packetByte;
+    private ByteBuffer packetBuffer;
+
+    public CRC32 crc;
+    public static final int PACKET_LENGTH = 1000;
+    public static final int CHECKSUM_OFFSET = 0;
+    public static final int CHECKSUM_LENGTH = 8;
+    public static final int SEQ_NO_OFFSET = CHECKSUM_LENGTH;
+    public static final int SEQ_NO_LENGTH = 4;
+    public static final int DATA_OFFSET = SEQ_NO_LENGTH + CHECKSUM_LENGTH;
+    public static final int DATA_LENGTH = PACKET_LENGTH - DATA_OFFSET;
+
 
     public static void main(String[] args) {
         
@@ -41,56 +52,67 @@ class FileSender {
             int portNumber = Integer.parseInt(port);
 
             // create sender socket
-            this.socket = new DatagramSocket();
+            socket = new DatagramSocket();
 
-            // send file name packet
-            this.pkt = buildFileNamePacket(rcvFileName, receiverAddress, portNumber);
-            sendPacket();
+            // create packet and buffer
+            packetByte = new byte[PACKET_LENGTH];
+            packetBuffer = ByteBuffer.wrap(packetByte);
+            byte[] data = new byte[DATA_LENGTH];
+            packet = new DatagramPacket(packetByte, PACKET_LENGTH, receiverAddress, portNumber);
+            crc = new CRC32();
             
-            // prepare the buffer
+            int sequenceNunmber = 0;
+            // sent fileName Packet
+            byte[] fileName = rcvFileName.getBytes();
+            sendPacket(fileName, sequenceNunmber++);
+
+            // prepare the file input buffer
             FileInputStream fis = new FileInputStream(fileToOpen);
             BufferedInputStream bis = new BufferedInputStream(fis);
-
-            byte[] buffer = new byte[1000];
             
             // send packets for file content
+            int numBytes;
             while (true) {
-                numBytes = bis.read(buffer);
+                numBytes = bis.read(data);
                 if (numBytes > 0) {
-                    this.pkt = new DatagramPacket(buffer, numBytes, receiverAddress, portNumber);
-                    this.socket.send(this.pkt);
+                    sendPacket(data, sequenceNunmber++);
                     Thread.sleep(1);
                 }
                 else {
                     break;
                 }
             }
-
             // send an empty buffer to signal the end of file
             byte[] emptyBuffer = new byte[0];
-            this.pkt = new DatagramPacket(emptyBuffer, 0, receiverAddress, portNumber);
-            this.socket.send(this.pkt);
+            sendPacket(emptyBuffer, sequenceNunmber);
 
             bis.close();
-            this.socket.close();
+            socket.close();
 
         } catch(Exception e) {
             e.printStackTrace();
         }
     }
 
-    private DatagramPacket buildFileNamePacket(String rcvFileName, InetAddress receiverAddress, int portNumber) {
-        byte[] fileName = rcvFileName.getBytes();
-        return new DatagramPacket(fileName, fileName.length, receiverAddress, portNumber);
+    private void buildPacket(byte[] data, int sequenceNunmber) {
+        packetBuffer.clear();
+        packetBuffer.putLong(0);
+        packetBuffer.putInt(sequenceNunmber);
+        packetBuffer.put(data);
+        long checksum = calculateChecksum(packetBuffer);
+        packetBuffer.putLong(0, checksum);
     }
 
-    private DatagramPacket buildPacket(byte[] buffer, BufferedInputStream bis, InetAddress receiverAddress, int portNumber) {
-        return new DatagramPacket(buffer, numBytes, receiverAddress, portNumber);
+    public long calculateChecksum(ByteBuffer buffer) {
+        crc.reset();
+        crc.update(buffer.array());
+        return crc.getValue();
     }
 
-    private void sendPacket() throws IOException{
+    private void sendPacket(byte[] data, int sequenceNunmber) throws IOException{
         try {
-            this.socket.send(this.pkt);         
+            buildPacket(data, sequenceNunmber);
+            socket.send(packet);
         } catch (SocketTimeoutException e){
         }
     }
