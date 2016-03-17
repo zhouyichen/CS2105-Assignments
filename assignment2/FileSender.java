@@ -101,13 +101,13 @@ class FileSender {
         packetBuffer.putLong(0);
         packetBuffer.putInt(sequenceNunmber);
         packetBuffer.put(data);
-        long checksum = calculateChecksum(packetBuffer);
-        packetBuffer.putLong(0, checksum);
+        long checkSum = calculateChecksum();
+        packetBuffer.putLong(0, checkSum);
     }
 
-    public long calculateChecksum(ByteBuffer buffer) {
+    public long calculateChecksum() {
         crc.reset();
-        crc.update(buffer.array());
+        crc.update(packetByte, CHECKSUM_LENGTH, PACKET_LENGTH - CHECKSUM_LENGTH);
         return crc.getValue();
     }
 

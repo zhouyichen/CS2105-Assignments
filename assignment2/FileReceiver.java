@@ -13,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.InetAddress;
+import java.util.zip.CRC32;
 
 class FileReceiver {
     
@@ -21,6 +22,7 @@ class FileReceiver {
     private byte[] packetByte;
     private ByteBuffer packetBuffer;
     private byte[] dataByte;
+    public CRC32 crc;
     
     public static void main(String[] args) {
         
@@ -42,6 +44,7 @@ class FileReceiver {
             packet = new DatagramPacket(packetByte, FileSender.PACKET_LENGTH);
 
             packetBuffer = ByteBuffer.wrap(packetByte);
+            crc = new CRC32();
 
             // get file name
             receivePacket();
@@ -54,7 +57,7 @@ class FileReceiver {
             while (true) {
                 // receive every packet and write them into the file
                 int sequenceNunmber = receivePacket();
-                
+
                 // check sequence number for end of the file
                 if (sequenceNunmber < 0) {
                     bos.write(dataByte, 0, -sequenceNunmber);
@@ -69,10 +72,16 @@ class FileReceiver {
     }
 
     public int receivePacket() throws IOException{
+
         socket.receive(packet);
         packetByte = packet.getData();
         packetBuffer = ByteBuffer.wrap(packetByte);
         long checkSum = packetBuffer.getLong();
+
+        // checksum
+        crc.reset();
+        crc.update(packetByte, FileSender.CHECKSUM_LENGTH, FileSender.PACKET_LENGTH - FileSender.CHECKSUM_LENGTH);
+
         int sequenceNunmber = packetBuffer.getInt();
         dataByte = new byte[FileSender.DATA_LENGTH];
         packetBuffer.get(dataByte);
