@@ -1,11 +1,26 @@
 // <Zhou Yichen> 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
+import java.net.InetAddress;
 
 class FileReceiver {
     
     private DatagramSocket socket; 
     private DatagramPacket packet;
+    private byte[] packetByte;
+    private ByteBuffer packetBuffer;
+    private byte[] dataByte;
     
     public static void main(String[] args) {
         
@@ -23,33 +38,45 @@ class FileReceiver {
             int portNumber = Integer.parseInt(localPort);
             socket = new DatagramSocket(portNumber);
 
-            byte[] buffer = new byte[FileSender.PACKET_LENGTH];
+            byte[] packetByte = new byte[FileSender.PACKET_LENGTH];
+            packet = new DatagramPacket(packetByte, FileSender.PACKET_LENGTH);
+
+            packetBuffer = ByteBuffer.wrap(packetByte);
 
             // get file name
-            packet = new DatagramPacket(buffer, PACKET_LENGTH);
-            socket.receive(packet);
-            String fileName = new String(packet.getData(), 0, packet.getLength());
+            receivePacket();
 
+            String fileName = new String(dataByte);
             // preapre file output
-            FileOutputStream fos = new FileOutputStream(fileName);
+            FileOutputStream fos = new FileOutputStream(fileName.trim());
             BufferedOutputStream bos = new BufferedOutputStream(fos);
 
             while (true) {
                 // receive every packet and write them into the file
-                packet = new DatagramPacket(buffer, buffer.length);
-                socket.receive(packet);
-                bos.write(packet.getData(), 0, packet.getLength());
-
-                // if the length of the packet is 0, this is the end of the file
-                if (packet.getLength() == 0) {
-                    break;
+                int sequenceNunmber = receivePacket();
+                
+                // check sequence number for end of the file
+                if (sequenceNunmber < 0) {
+                    bos.write(dataByte, 0, -sequenceNunmber);
+                    bos.close();
                 }
+                bos.write(dataByte);
             }
-            bos.close();
-            socket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    public int receivePacket() throws IOException{
+        socket.receive(packet);
+        packetByte = packet.getData();
+        packetBuffer = ByteBuffer.wrap(packetByte);
+        long checkSum = packetBuffer.getLong();
+        int sequenceNunmber = packetBuffer.getInt();
+        dataByte = new byte[FileSender.DATA_LENGTH];
+        packetBuffer.get(dataByte);
+        return sequenceNunmber;
+    }
+
 }
