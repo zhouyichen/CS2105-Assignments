@@ -31,7 +31,6 @@ class FileSender {
     public static final int DATA_OFFSET = SEQ_NO_LENGTH + CHECKSUM_LENGTH;
     public static final int DATA_LENGTH = PACKET_LENGTH - DATA_OFFSET;
 
-
     public static void main(String[] args) {
         
         // check if the number of command line argument is 4
@@ -74,17 +73,20 @@ class FileSender {
             int numBytes;
             while (true) {
                 numBytes = bis.read(data);
-                if (numBytes > 0) {
+                if (numBytes == DATA_LENGTH) {
                     sendPacket(data, sequenceNunmber++);
                     Thread.sleep(1);
+                    if (sequenceNunmber < 0) {
+                        sequenceNunmber = 0;
+                    }
                 }
                 else {
+                    // send the last packet
+                    sendPacket(data, -numBytes);
                     break;
                 }
             }
-            // send an empty buffer to signal the end of file
-            byte[] emptyBuffer = new byte[0];
-            sendPacket(emptyBuffer, sequenceNunmber);
+            
 
             bis.close();
             socket.close();
