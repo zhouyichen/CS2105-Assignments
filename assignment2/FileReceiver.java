@@ -28,6 +28,7 @@ class FileReceiver {
     private DatagramPacket ackPacket;
     private byte[] ackByte;
     private ByteBuffer ackPacketBuffer;
+    private int currentSequenceNumber;
 
     public static final int ACK_LENGTH = 16;
     public static final int ACK_FLAG = Integer.MAX_VALUE;
@@ -40,7 +41,6 @@ class FileReceiver {
             System.out.println("Usage: java FileReceiver port");
             System.exit(1);
         }
-        
         new FileReceiver(args[0]);
     }
     
@@ -60,6 +60,7 @@ class FileReceiver {
             ackPacket = new DatagramPacket(ackByte, ACK_LENGTH);
             
             crc = new CRC32();
+            currentSequenceNumber = -1;
 
             // get file name
             boolean isFileNameReceived = receiveFileNamePacket();
@@ -108,7 +109,7 @@ class FileReceiver {
         int sequenceNunmber = packetBuffer.getInt();
 
         if (isValidFile) {
-            sendAckAndWrite(sequenceNunmber);
+            sequenceNunmber = sendAckAndWrite(sequenceNunmber);
         } else {
             sendFeedback(false, sequenceNunmber);
             sequenceNunmber = 0;
@@ -128,10 +129,17 @@ class FileReceiver {
         return (checkSum == crc.getValue());
     }
 
-    public void sendAckAndWrite(int sequenceNunmber){
+    public int sendAckAndWrite(int sequenceNunmber){
         sendFeedback(true, sequenceNunmber);
-        dataByte = new byte[FileSender.DATA_LENGTH];
-        packetBuffer.get(dataByte);
+
+        if (currentSequenceNumber != sequenceNunmber) {
+            dataByte = new byte[FileSender.DATA_LENGTH];
+            packetBuffer.get(dataByte);
+            currentSequenceNumber = sequenceNunmber;
+        } else {
+            sequenceNunmber = 0;
+        }
+        return sequenceNunmber;
     }
 
     public void sendFeedback(boolean isAck, int sequenceNunmber) {

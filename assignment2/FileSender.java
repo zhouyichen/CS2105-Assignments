@@ -57,7 +57,7 @@ class FileSender {
 
             // create sender socket
             socket = new DatagramSocket();
-            socket.setSoTimeout(5);
+            socket.setSoTimeout(1);
 
             // create packet and buffer
             packetByte = new byte[PACKET_LENGTH];
@@ -123,8 +123,8 @@ class FileSender {
                 if (checkSum == crc.getValue()) {
                     int ackSequenceNunmber = ackPacketBuffer.getInt();
                     int ack = ackPacketBuffer.getInt();
-                    if (ack == FileReceiver.ACK_FLAG) {
                         System.out.println(sequenceNunmber);
+                    if (ack == FileReceiver.ACK_FLAG && ackSequenceNunmber == sequenceNunmber) {
                         isAcked = true;
                     }
                 }
