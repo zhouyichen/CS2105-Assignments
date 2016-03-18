@@ -51,13 +51,14 @@ class FileReceiver {
             socket = new DatagramSocket(portNumber);
             byte[] packetByte = new byte[FileSender.PACKET_LENGTH];
             packet = new DatagramPacket(packetByte, FileSender.PACKET_LENGTH);
-            packetBuffer = ByteBuffer.wrap(packetByte);
             crc = new CRC32();
 
             // prepare packet for sending ack/nak
-            byte[] ackByte = new byte[ACK_LENGTH];
-            ackPacket = new DatagramPacket(ackByte, ACK_LENGTH);
+            ackByte = new byte[ACK_LENGTH];
+
             ackPacketBuffer = ByteBuffer.wrap(ackByte);
+            ackPacket = new DatagramPacket(ackByte, ACK_LENGTH);
+            
             crc = new CRC32();
 
             // get file name
@@ -88,12 +89,13 @@ class FileReceiver {
         }
     }
 
-    private boolean receiveFileNamePacket() throws IOException{
+    public boolean receiveFileNamePacket() throws IOException{
         boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
 
         if (isValidFile) {
             ackPacket.setSocketAddress(packet.getSocketAddress());
+
             sendAckAndWrite(sequenceNunmber);
         } else {
             sendFeedback(false, sequenceNunmber);
@@ -101,7 +103,7 @@ class FileReceiver {
         return isValidFile;
     }
 
-    private int receivePacket() throws IOException{
+    public int receivePacket() throws IOException{
         boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
 
@@ -114,7 +116,7 @@ class FileReceiver {
         return sequenceNunmber;
     }
 
-    private boolean checkPacket() throws IOException{
+    public boolean checkPacket() throws IOException{
         socket.receive(packet);
         packetByte = packet.getData();
         packetBuffer = ByteBuffer.wrap(packetByte);
@@ -126,22 +128,22 @@ class FileReceiver {
         return (checkSum == crc.getValue());
     }
 
-    private void sendAckAndWrite(int sequenceNunmber){
+    public void sendAckAndWrite(int sequenceNunmber){
         sendFeedback(true, sequenceNunmber);
         dataByte = new byte[FileSender.DATA_LENGTH];
         packetBuffer.get(dataByte);
     }
 
-    private void sendFeedback(boolean isAck, int sequenceNunmber) {
+    public void sendFeedback(boolean isAck, int sequenceNunmber) {
         try {
-            buildFeedBackPacket(isAck, sequenceNunmber);
-            socket.send(packet);
+            buildFeedbackPacket(isAck, sequenceNunmber);
+            socket.send(ackPacket);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void buildFeedBackPacket(boolean isAck, int sequenceNunmber){
+    public void buildFeedbackPacket(boolean isAck, int sequenceNunmber){
         ackPacketBuffer.clear();
         ackPacketBuffer.putLong(0);
         ackPacketBuffer.putInt(sequenceNunmber);
@@ -154,9 +156,9 @@ class FileReceiver {
         ackPacketBuffer.putLong(0, checkSum);
     }
 
-    private long calculateChecksum() {
+    public long calculateChecksum() {
         crc.reset();
-        crc.update(packetByte, FileSender.CHECKSUM_LENGTH, ACK_LENGTH - FileSender.CHECKSUM_LENGTH);
+        crc.update(ackByte, FileSender.CHECKSUM_LENGTH, ACK_LENGTH - FileSender.CHECKSUM_LENGTH);
         return crc.getValue();
     }
 }
