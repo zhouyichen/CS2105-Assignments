@@ -22,7 +22,16 @@ class FileReceiver {
     private byte[] packetByte;
     private ByteBuffer packetBuffer;
     private byte[] dataByte;
-    public CRC32 crc;
+    
+    private CRC32 crc;
+
+    private DatagramPacket ackPacket;
+    private byte[] ackByte;
+    private ByteBuffer ackPacketBuffer;
+    
+    public static final int ACK_LENGTH = 16;
+    public static final int ACK_FLAG = Integer.MAX_VALUE;
+    public static final int NAK_FLAG = 0;
     
     public static void main(String[] args) {
         
@@ -37,19 +46,23 @@ class FileReceiver {
     
     public FileReceiver(String localPort) {
         try {
+            // prepare socket and packet for receiving data
             int portNumber = Integer.parseInt(localPort);
             socket = new DatagramSocket(portNumber);
-
             byte[] packetByte = new byte[FileSender.PACKET_LENGTH];
             packet = new DatagramPacket(packetByte, FileSender.PACKET_LENGTH);
-
             packetBuffer = ByteBuffer.wrap(packetByte);
             crc = new CRC32();
 
-            // get file name
-            receivePacket();
+            // prepare packet for sending ack/nak
+            byte[] ackByte = new byte[ACK_LENGTH];
+            ackPacket = new DatagramPacket(ackByte, ACK_LENGTH);
+            ackPacketBuffer = ByteBuffer.wrap(ackByte);
+            crc = new CRC32();
 
-            String fileName = new String(dataByte);
+            // get file name
+            String fileName = receiveFileNamePacket();
+
             // preapre file output
             FileOutputStream fos = new FileOutputStream(fileName.trim());
             BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -71,8 +84,25 @@ class FileReceiver {
         }
     }
 
-    public int receivePacket() throws IOException{
+    public String receiveFileNamePacket() throws IOException{
+        checkPacket();
+        ackPacket.setSocketAddress(packet.getSocketAddress());
+        int sequenceNunmber = packetBuffer.getInt();
+        dataByte = new byte[FileSender.DATA_LENGTH];
+        packetBuffer.get(dataByte);
+        return new String(dataByte);
+    }
 
+    public int receivePacket() throws IOException{
+        checkPacket();
+
+        int sequenceNunmber = packetBuffer.getInt();
+        dataByte = new byte[FileSender.DATA_LENGTH];
+        packetBuffer.get(dataByte);
+        return sequenceNunmber;
+    }
+
+    public void checkPacket() throws IOException{
         socket.receive(packet);
         packetByte = packet.getData();
         packetBuffer = ByteBuffer.wrap(packetByte);
@@ -81,11 +111,6 @@ class FileReceiver {
         // checksum
         crc.reset();
         crc.update(packetByte, FileSender.CHECKSUM_LENGTH, FileSender.PACKET_LENGTH - FileSender.CHECKSUM_LENGTH);
-
-        int sequenceNunmber = packetBuffer.getInt();
-        dataByte = new byte[FileSender.DATA_LENGTH];
-        packetBuffer.get(dataByte);
-        return sequenceNunmber;
     }
 
 }
