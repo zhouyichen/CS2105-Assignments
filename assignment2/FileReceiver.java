@@ -88,7 +88,7 @@ class FileReceiver {
         }
     }
 
-    public boolean receiveFileNamePacket() throws IOException{
+    private boolean receiveFileNamePacket() throws IOException{
         boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
 
@@ -101,7 +101,7 @@ class FileReceiver {
         return isValidFile;
     }
 
-    public int receivePacket() throws IOException{
+    private int receivePacket() throws IOException{
         boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
 
@@ -114,7 +114,7 @@ class FileReceiver {
         return sequenceNunmber;
     }
 
-    public boolean checkPacket() throws IOException{
+    private boolean checkPacket() throws IOException{
         socket.receive(packet);
         packetByte = packet.getData();
         packetBuffer = ByteBuffer.wrap(packetByte);
@@ -126,13 +126,13 @@ class FileReceiver {
         return (checkSum == crc.getValue());
     }
 
-    public void sendAckAndWrite(int sequenceNunmber){
+    private void sendAckAndWrite(int sequenceNunmber){
         sendFeedback(true, sequenceNunmber);
         dataByte = new byte[FileSender.DATA_LENGTH];
         packetBuffer.get(dataByte);
     }
 
-    public void sendFeedback(boolean isAck, int sequenceNunmber) {
+    private void sendFeedback(boolean isAck, int sequenceNunmber) {
         try {
             buildFeedBackPacket(isAck, sequenceNunmber);
             socket.send(packet);
@@ -141,7 +141,7 @@ class FileReceiver {
         }
     }
 
-    public void buildFeedBackPacket(boolean isAck, int sequenceNunmber){
+    private void buildFeedBackPacket(boolean isAck, int sequenceNunmber){
         ackPacketBuffer.clear();
         ackPacketBuffer.putLong(0);
         ackPacketBuffer.putInt(sequenceNunmber);
@@ -154,7 +154,7 @@ class FileReceiver {
         ackPacketBuffer.putLong(0, checkSum);
     }
 
-    public long calculateChecksum() {
+    private long calculateChecksum() {
         crc.reset();
         crc.update(packetByte, FileSender.CHECKSUM_LENGTH, ACK_LENGTH - FileSender.CHECKSUM_LENGTH);
         return crc.getValue();

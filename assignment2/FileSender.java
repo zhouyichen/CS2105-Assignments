@@ -105,7 +105,7 @@ class FileSender {
         packetBuffer.putLong(0, checkSum);
     }
 
-    public long calculateChecksum() {
+    private long calculateChecksum() {
         crc.reset();
         crc.update(packetByte, CHECKSUM_LENGTH, PACKET_LENGTH - CHECKSUM_LENGTH);
         return crc.getValue();
