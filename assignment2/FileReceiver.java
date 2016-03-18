@@ -28,7 +28,7 @@ class FileReceiver {
     private DatagramPacket ackPacket;
     private byte[] ackByte;
     private ByteBuffer ackPacketBuffer;
-    
+
     public static final int ACK_LENGTH = 16;
     public static final int ACK_FLAG = Integer.MAX_VALUE;
     public static final int NAK_FLAG = 0;
@@ -61,7 +61,8 @@ class FileReceiver {
             crc = new CRC32();
 
             // get file name
-            String fileName = receiveFileNamePacket();
+            boolean isFileNameReceived = receiveFileNamePacket();
+            String fileName = new String(dataByte);
 
             // preapre file output
             FileOutputStream fos = new FileOutputStream(fileName.trim());
@@ -76,7 +77,10 @@ class FileReceiver {
                     bos.write(dataByte, 0, -sequenceNunmber);
                     bos.close();
                 }
-                bos.write(dataByte);
+                // data is correctly received when sequence number is larger than 0
+                if (sequenceNunmber > 0) {
+                    bos.write(dataByte);
+                }
             }
 
         } catch (Exception e) {
@@ -84,25 +88,33 @@ class FileReceiver {
         }
     }
 
-    public String receiveFileNamePacket() throws IOException{
-        checkPacket();
-        ackPacket.setSocketAddress(packet.getSocketAddress());
+    public boolean receiveFileNamePacket() throws IOException{
+        boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
-        dataByte = new byte[FileSender.DATA_LENGTH];
-        packetBuffer.get(dataByte);
-        return new String(dataByte);
+
+        if (isValidFile) {
+            ackPacket.setSocketAddress(packet.getSocketAddress());
+            sendAckAndWrite(sequenceNunmber);
+        } else {
+            sendFeedback(false, sequenceNunmber);
+        }
+        return isValidFile;
     }
 
     public int receivePacket() throws IOException{
-        checkPacket();
-
+        boolean isValidFile = checkPacket();
         int sequenceNunmber = packetBuffer.getInt();
-        dataByte = new byte[FileSender.DATA_LENGTH];
-        packetBuffer.get(dataByte);
+
+        if (isValidFile) {
+            sendAckAndWrite(sequenceNunmber);
+        } else {
+            sendFeedback(false, sequenceNunmber);
+            sequenceNunmber = 0;
+        }
         return sequenceNunmber;
     }
 
-    public void checkPacket() throws IOException{
+    public boolean checkPacket() throws IOException{
         socket.receive(packet);
         packetByte = packet.getData();
         packetBuffer = ByteBuffer.wrap(packetByte);
@@ -111,6 +123,40 @@ class FileReceiver {
         // checksum
         crc.reset();
         crc.update(packetByte, FileSender.CHECKSUM_LENGTH, FileSender.PACKET_LENGTH - FileSender.CHECKSUM_LENGTH);
+        return (checkSum == crc.getValue());
     }
 
+    public void sendAckAndWrite(int sequenceNunmber){
+        sendFeedback(true, sequenceNunmber);
+        dataByte = new byte[FileSender.DATA_LENGTH];
+        packetBuffer.get(dataByte);
+    }
+
+    public void sendFeedback(boolean isAck, int sequenceNunmber) {
+        try {
+            buildFeedBackPacket(isAck, sequenceNunmber);
+            socket.send(packet);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void buildFeedBackPacket(boolean isAck, int sequenceNunmber){
+        ackPacketBuffer.clear();
+        ackPacketBuffer.putLong(0);
+        ackPacketBuffer.putInt(sequenceNunmber);
+        if (isAck) {
+            ackPacketBuffer.putInt(ACK_FLAG);
+        } else {
+            ackPacketBuffer.putInt(NAK_FLAG);
+        }
+        long checkSum = calculateChecksum();
+        ackPacketBuffer.putLong(0, checkSum);
+    }
+
+    public long calculateChecksum() {
+        crc.reset();
+        crc.update(packetByte, FileSender.CHECKSUM_LENGTH, ACK_LENGTH - FileSender.CHECKSUM_LENGTH);
+        return crc.getValue();
+    }
 }
