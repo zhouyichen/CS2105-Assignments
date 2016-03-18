@@ -49,7 +49,7 @@ public class UnreliNET {
                     // decide if to drop the packet or not
                     if (rnd.nextFloat() <= data_loss_pct) {
                         dropCounter++;
-                        System.out.println(dropCounter + " packet(s) dropped");
+                        // System.out.println(dropCounter + " packet(s) dropped");
                         continue;
                     }
                     
@@ -59,7 +59,7 @@ public class UnreliNET {
                             if (rnd_byte.nextFloat() <= 0.3)  //decide if to corrupt a byte
                                 in_data[i] = (byte) ((in_data[i] + 1) % 10);
                         corruptionCounter++;
-                        System.out.println(corruptionCounter + " packet(s) corrupted");
+                        // System.out.println(corruptionCounter + " packet(s) corrupted");
                     }
                     
                     // write data to the outgoing socket
@@ -102,7 +102,7 @@ public class UnreliNET {
                     // decide if to drop the packet or not
                     if (rnd.nextFloat() <= ack_loss_pct) {
                         ackdropCounter++;
-                        System.out.println(ackdropCounter + " ACK/NAK dropped");
+                        // System.out.println(ackdropCounter + " ACK/NAK dropped");
                         continue;
                     }
                     
@@ -112,7 +112,7 @@ public class UnreliNET {
                             if (rnd_byte.nextFloat() <= 0.3) //decide if to corrupt a byte
                                 in_data[i] = (byte) ((in_data[i] + 1) % 10);
                         ackcorruptionCounter++;
-                        System.out.println(ackcorruptionCounter + " ACK/NAK corrupted");
+                        // System.out.println(ackcorruptionCounter + " ACK/NAK corrupted");
                     }
                     
                     // write data to the outgoing socket
@@ -132,13 +132,13 @@ public class UnreliNET {
                      float data_loss_rate, float ack_loss_rate, int unreliNetPort, 
                      String rcvHost, int rcvPort) {
         
-        System.out.println("unreliNetPort = " + unreliNetPort
-                               + "\nrcvHost = " + rcvHost 
-                               + "\nrcvPort = " + rcvPort 
-                               + "\ndata corruption rate = " + data_corrupt_rate
-                               + "\nack/nak corruption rate = " + ack_corrupt_rate
-                               + "\ndata loss rate = " + data_loss_rate
-                               + "\nack/nak loss rate = " + ack_loss_rate);
+        // System.out.println("unreliNetPort = " + unreliNetPort
+                               // + "\nrcvHost = " + rcvHost 
+                               // + "\nrcvPort = " + rcvPort 
+                               // + "\ndata corruption rate = " + data_corrupt_rate
+                               // + "\nack/nak corruption rate = " + ack_corrupt_rate
+                               // + "\ndata loss rate = " + data_loss_rate
+                               // + "\nack/nak loss rate = " + ack_loss_rate);
         
         try {
             // Create socket sk1 and sk2

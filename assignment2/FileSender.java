@@ -123,7 +123,6 @@ class FileSender {
                 if (checkSum == crc.getValue()) {
                     int ackSequenceNunmber = ackPacketBuffer.getInt();
                     int ack = ackPacketBuffer.getInt();
-                        System.out.println(sequenceNunmber);
                     if (ack == FileReceiver.ACK_FLAG && ackSequenceNunmber == sequenceNunmber) {
                         isAcked = true;
                     }
