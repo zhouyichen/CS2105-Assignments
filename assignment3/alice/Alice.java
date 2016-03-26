@@ -130,17 +130,32 @@ class Alice {  // Alice is a TCP client
         // Generate a session key
         public void initSessionKey() {
             // suggested AES key length is 128 bits
+            try{
+                KeyGenerator generator = KeyGenerator.getInstance("AES");
+                generator.init(128);
+                sessionKey = generator.generateKey();
+            } catch (Exception e){
+                e.printStackTrace();
+            }
         }
         
         // Seal session key with RSA public key in a SealedObject and return
         public SealedObject getSessionKey() {
-            
-            // Alice must use the same RSA key/transformation as Bob specified
-            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            SealedObject sealedSessionKey = null;
 
             // RSA imposes size restriction on the object being encrypted (117 bytes).
             // Instead of sealing a Key object which is way over the size restriction,
             // we shall encrypt AES key in its byte format (using getEncoded() method).
+            try{
+                // Alice must use the same RSA key/transformation as Bob specified
+                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                cipher.init(Cipher.ENCRYPT_MODE, this.pubKey);
+                sealedSessionKey = new SealedObject(sessionKey.getEncoded(), cipher);
+                
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+            return sealedSessionKey;
         }
         
         // Decrypt and extract a message from SealedObject
