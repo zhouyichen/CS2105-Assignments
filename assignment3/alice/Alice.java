@@ -80,6 +80,11 @@ class Alice {  // Alice is a TCP client
     // Send session key to Bob
     public void sendSessionKey() {
         
+        try {
+            toBob.writeObject(this.crypto.getSessionKey());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     // Receive messages one by one from Bob, decrypt and write to file
