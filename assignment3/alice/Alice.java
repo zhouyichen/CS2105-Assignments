@@ -165,13 +165,16 @@ class Alice {  // Alice is a TCP client
         
         // Decrypt and extract a message from SealedObject
         public String decryptMsg(SealedObject encryptedMsgObj) {     
-            
             String plainText = null;       
-            
+            try{
                 // Alice and Bob use the same AES key/transformation
                 Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+                cipher.init(Cipher.DECRYPT_MODE, sessionKey);
+                plainText = (String)encryptedMsgObj.getObject(cipher);
                 
-            
+            } catch(Exception e){
+                e.printStackTrace();
+            }
             return plainText;
         }
     }
