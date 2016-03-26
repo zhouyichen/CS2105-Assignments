@@ -1,4 +1,4 @@
-// Author: 
+// Author: Yichen
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +32,7 @@ import javax.crypto.SealedObject;
 
 class Alice {  // Alice is a TCP client
     
+    private Socket connectionSkt;
     private ObjectOutputStream toBob;   // to send session key to Bob
     private ObjectInputStream fromBob;  // to read encrypted messages from Bob
     private Crypto crypto;        // object for encryption and decryption
@@ -52,7 +53,22 @@ class Alice {  // Alice is a TCP client
     public Alice(String ipStr, String portStr) {
         
         this.crypto = new Crypto();
-        
+
+        try {
+            connectionSkt = new Socket(ipStr, Integer.parseInt(portStr));
+        } catch (IOException ioe) {
+            System.out.println("Error creating connection socket");
+            System.exit(1);
+        }
+
+        try {
+            toBob = new ObjectOutputStream(connectionSkt.getOutputStream());
+            fromBob = new ObjectInputStream(connectionSkt.getInputStream());
+        } catch (IOException e) {
+            System.out.println("Error: cannot get input/output streams");
+            System.exit(1);
+        }
+
         // Send session key to Bob
         sendSessionKey();
         
@@ -108,20 +124,20 @@ class Alice {  // Alice is a TCP client
             
             // Alice must use the same RSA key/transformation as Bob specified
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            
+
             // RSA imposes size restriction on the object being encrypted (117 bytes).
             // Instead of sealing a Key object which is way over the size restriction,
-            // we shall encrypt AES key in its byte format (using getEncoded() method).           
+            // we shall encrypt AES key in its byte format (using getEncoded() method).
         }
         
         // Decrypt and extract a message from SealedObject
-        public String decryptMsg(SealedObject encryptedMsgObj) {
+        public String decryptMsg(SealedObject encryptedMsgObj) {     
             
-            String plainText = null;
+            String plainText = null;       
             
-            // Alice and Bob use the same AES key/transformation
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-            
+                // Alice and Bob use the same AES key/transformation
+                Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+                
             
             return plainText;
         }
