@@ -112,6 +112,19 @@ class Alice {  // Alice is a TCP client
         public void readPublicKey() {
             // key is stored as an object and need to be read using ObjectInputStream.
             // See how Bob read his private key as an example.
+            try {
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(PUBLIC_KEY_FILE));
+                this.pubKey = (PublicKey)ois.readObject();
+                ois.close();
+            } catch (IOException oie) {
+                System.out.println("Error reading public key from file");
+                System.exit(1);
+            } catch (ClassNotFoundException cnfe) {
+                System.out.println("Error: cannot typecast to class PublicKey");
+                System.exit(1);            
+            }
+            
+            System.out.println("Public key read from file " + PUBLIC_KEY_FILE);
         }
         
         // Generate a session key
