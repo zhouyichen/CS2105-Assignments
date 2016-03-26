@@ -89,8 +89,22 @@ class Alice {  // Alice is a TCP client
     
     // Receive messages one by one from Bob, decrypt and write to file
     public void receiveMessages() {
-        
-        // How to detect Bob has no more data to send?
+        try {
+            PrintWriter printWriter = new PrintWriter(MESSAGE_FILE);
+            while (true) {
+                try {
+                    SealedObject encryptedMessage = (SealedObject) fromBob.readObject();
+                    String msg = this.crypto.decryptMsg(encryptedMessage);
+                    printWriter.println(msg);                    
+                } catch (EOFException e) {
+                    // No more new lines, stop receiving
+                    break;
+                }
+            }
+            printWriter.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } 
     }
     
     /*****************/
